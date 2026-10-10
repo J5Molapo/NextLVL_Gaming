@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Payment Successful | Next LvL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-image">
+    <header class="top-banner">
+        <a href="Index.HTML" class="logo-wrap" aria-label="Home page">
+            <img src="Images/NextLvl.png" alt="NextLvl Logo" class="site-logo">
+        </a>
+    </header>
+
+    <main class="page-wrap">
+        <section class="section">
+            <div class="form-card" style="text-align:center;">
+                <img src="Images/NextLvl.png" alt="Logo" style="height:72px; margin-bottom:12px;">
+                <h2>Payment Successful</h2>
+                <p id="success-copy" style="color:var(--muted)"></p>
+                <div style="margin-top:18px;">
+                    <a class="primary-btn" href="Index.HTML">Back to Home</a>
+                    <a class="secondary-btn" href="Products.html" style="margin-left:12px;">Shop more</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">© 2026 Next LvL Gaming. All rights reserved.</footer>
+
+    <script>
+        const order = JSON.parse(localStorage.getItem('lastOrder') || '{}');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const el = document.getElementById('success-copy');
+        if (order && order.id) {
+            const username = user.username || 'Yetti';
+            el.textContent = `${username}, your payment was successful. Order ${order.id} has been placed.`;
+            // optionally show items
+            if (order.items && order.items.length) {
+                const ul = document.createElement('ul');
+                ul.style.listStyle='none'; ul.style.padding='0';
+                order.items.forEach(it=>{
+                    const li = document.createElement('li'); li.textContent = `${it.name} — R${Number(it.price).toFixed(2)}`; ul.appendChild(li);
+                });
+                el.appendChild(document.createElement('br'));
+                el.appendChild(ul);
+            }
+        } else {
+            el.textContent = 'No recent order found.';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Paygate | Next LvL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-image">
+    <header class="top-banner">
+        <a href="Index.HTML" class="logo-wrap" aria-label="Home page">
+            <img src="Images/NextLvl.png" alt="NextLvl Logo" class="site-logo">
+        </a>
+    </header>
+
+    <main class="page-wrap">
+        <section class="section">
+            <div class="form-card">
+                <h2>Checkout</h2>
+                <div id="cart-contents" style="margin-top:12px;"></div>
+
+                <div style="margin-top:18px;">
+                    <h3>Payment Method</h3>
+                    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:8px;"><input type="radio" name="method" value="capitec" checked>
+                            <img src="Images/capitec.png" alt="Capitec" style="height:22px;">
+                            Capitec Pay
+                        </label>
+
+                        <label style="display:flex; align-items:center; gap:8px;"><input type="radio" name="method" value="ozow">
+                            <img src="Images/ozow.png" alt="Ozow" style="height:22px;">
+                            Ozow
+                        </label>
+
+                        <label style="display:flex; align-items:center; gap:8px;"><input type="radio" name="method" value="card">
+                            <img src="Images/mastercard.webp" alt="Mastercard" style="height:20px;">
+                            Card (saved or new)
+                        </label>
+                    </div>
+                </div>
+
+                <div id="payment-details" style="margin-top:18px; display:none;">
+                    <div id="capitec-details" class="payment-detail" style="display:none;">
+                        <h4>Capitec Pay details</h4>
+                        <label for="capitec-mobile">Capitec mobile number</label>
+                        <input id="capitec-mobile" type="tel" placeholder="e.g. 082 123 4567">
+                        <label for="capitec-name">Full name</label>
+                        <input id="capitec-name" type="text" placeholder="Name on Capitec account">
+                    </div>
+
+                    <div id="ozow-details" class="payment-detail" style="display:none;">
+                        <h4>Ozow details</h4>
+                        <label for="ozow-number">Mobile number</label>
+                        <input id="ozow-number" type="tel" placeholder="e.g. 082 123 4567">
+                        <label for="ozow-email">Email address</label>
+                        <input id="ozow-email" type="email" placeholder="you@example.com">
+                    </div>
+                </div>
+
+                <div style="margin-top:18px;" id="cards-section">
+                    <h3>Your Saved Cards</h3>
+                    <div id="saved-cards"></div>
+                    <div style="margin-top:12px;">
+                        <h4>Add a Card</h4>
+                        <label for="card-number">Card number</label>
+                        <input id="card-number" placeholder="4242 4242 4242 4242">
+                        <label for="card-name">Name on card</label>
+                        <input id="card-name" placeholder="Cardholder name">
+                        <button id="save-card" class="submit-btn" style="margin-top:8px;">Save card</button>
+                    </div>
+                </div>
+
+                <div style="margin-top:18px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>Total:</strong> <span id="grand-total">R0</span>
+                    </div>
+                    <div>
+                        <button id="pay-btn" class="submit-btn">Pay now</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">© 2026 Next LvL Gaming. All rights reserved.</footer>
+
+    <script>
+        function formatR(v){ return 'R' + Number(v).toFixed(2); }
+        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const cartEl = document.getElementById('cart-contents');
+        const totalEl = document.getElementById('grand-total');
+        const savedCardsEl = document.getElementById('saved-cards');
+
+        let total = 0;
+        if (cart.length === 0) {
+            cartEl.innerHTML = '<p style="color:var(--muted)">Your cart is empty. Go back and add items.</p>';
+        } else {
+            const ul = document.createElement('ul');
+            ul.style.listStyle='none'; ul.style.padding='0';
+            cart.forEach((it, i) => {
+                const li = document.createElement('li');
+                li.style.padding='8px 0';
+                li.textContent = `${it.name} — ${formatR(it.price)}`;
+                ul.appendChild(li);
+                total += Number(it.price);
+            });
+            cartEl.appendChild(ul);
+        }
+        totalEl.textContent = formatR(total);
+
+        function renderSavedCards(){
+            const cards = JSON.parse(localStorage.getItem('cards') || '[]');
+            savedCardsEl.innerHTML = '';
+            if (!cards.length) return savedCardsEl.innerHTML = '<p style="color:var(--muted)">No saved cards</p>';
+            cards.forEach((c, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'secondary-btn';
+                btn.style.marginRight='8px';
+                btn.textContent = `•••• ${c.number.slice(-4)}`;
+                btn.addEventListener('click', ()=>{
+                    // select card for payment
+                    document.querySelectorAll('input[name="method"]').forEach(r=>r.checked=false);
+                    document.querySelector('input[name="method"][value="card"]').checked = true;
+                    // stash selected card index
+                    localStorage.setItem('selectedCard', idx);
+                });
+                savedCardsEl.appendChild(btn);
+            });
+        }
+        renderSavedCards();
+
+        document.getElementById('save-card').addEventListener('click', ()=>{
+            const num = document.getElementById('card-number').value.trim();
+            const name = document.getElementById('card-name').value.trim();
+            if (!num || !name) return alert('Enter card number and name');
+            const cards = JSON.parse(localStorage.getItem('cards') || '[]');
+            cards.push({ number: num.replace(/\s+/g,''), name });
+            localStorage.setItem('cards', JSON.stringify(cards));
+            renderSavedCards();
+            alert('Card saved (mock).');
+        });
+
+        function updatePaymentDetails() {
+            const method = document.querySelector('input[name="method"]:checked')?.value || 'capitec';
+            const paymentDetails = document.getElementById('payment-details');
+            const capitec = document.getElementById('capitec-details');
+            const ozow = document.getElementById('ozow-details');
+
+            paymentDetails.style.display = (method === 'capitec' || method === 'ozow') ? 'block' : 'none';
+            capitec.style.display = method === 'capitec' ? 'block' : 'none';
+            ozow.style.display = method === 'ozow' ? 'block' : 'none';
+
+            const cardsSection = document.getElementById('cards-section');
+            cardsSection.style.display = method === 'card' ? 'block' : 'none';
+        }
+
+        document.querySelectorAll('input[name="method"]').forEach(radio => {
+            radio.addEventListener('change', updatePaymentDetails);
+        });
+
+        updatePaymentDetails();
+
+        document.getElementById('pay-btn').addEventListener('click', ()=>{
+            if (cart.length === 0) return alert('Cart empty.');
+            const method = document.querySelector('input[name="method"]:checked').value;
+
+            if (method === 'capitec') {
+                const mobile = document.getElementById('capitec-mobile').value.trim();
+                const name = document.getElementById('capitec-name').value.trim();
+                if (!mobile || !name) return alert('Please enter your Capitec mobile number and full name.');
+            }
+
+            if (method === 'ozow') {
+                const number = document.getElementById('ozow-number').value.trim();
+                const email = document.getElementById('ozow-email').value.trim();
+                if (!number || !email) return alert('Please enter your Ozow mobile number and email address.');
+            }
+
+            // simulate payment
+            document.getElementById('pay-btn').disabled = true;
+            document.getElementById('pay-btn').textContent = 'Processing...';
+            setTimeout(()=>{
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const order = { id: 'ORDER-' + Date.now(), items: cart, total };
+                const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+                const accountIndex = accounts.findIndex(a => {
+                    const matchEmail = a.email && user.email && a.email.toLowerCase() === user.email.toLowerCase();
+                    const matchPhone = a.phone && user.phone && a.phone.toLowerCase() === user.phone.toLowerCase();
+                    return matchEmail || matchPhone || a.username === user.username;
+                });
+
+                if (accountIndex >= 0) {
+                    const account = accounts[accountIndex];
+                    account.orders = Array.isArray(account.orders) ? account.orders : [];
+                    account.orders.push(order);
+                    accounts[accountIndex] = account;
+                    localStorage.setItem('accounts', JSON.stringify(accounts));
+                }
+
+                const updatedUser = {
+                    ...(user || {}),
+                    orders: Array.isArray(user.orders) ? [...user.orders, order] : [order]
+                };
+                localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                localStorage.setItem('lastOrder', JSON.stringify(order));
+
+                if (user && user.email) {
+                    const subject = encodeURIComponent('Your Next LvL order ' + order.id);
+                    const body = encodeURIComponent('Thanks for your order!\nOrder ID: ' + order.id + '\nTotal: ' + formatR(order.total) + '\nItems:\n' + order.items.map(it=>`- ${it.name} (${formatR(it.price)})`).join('\n'));
+                    window.location.href = `mailto:${user.email}?subject=${subject}&body=${body}`;
+                }
+
+                localStorage.removeItem('cart');
+                localStorage.removeItem('cartSummary');
+                window.location.href = 'payment-success.html';
+            }, 1200);
+        });
+    </script>
+</body>
+</html>

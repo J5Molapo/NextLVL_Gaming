@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Profile | Next LvL</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .profile-wrap { display: grid; grid-template-columns: 260px 1fr; gap: 20px; padding: 28px 0; }
+        .sidebar { background: var(--panel-alt); border:1px solid var(--line); border-radius:14px; padding:18px; }
+        .sidebar .user { text-align:center; margin-bottom:14px; }
+        .sidebar .nav { display:flex; flex-direction:column; gap:8px; }
+        .sidebar .nav button { text-align:left; }
+        .logout-btn { background:#ff5252; color:white; border:none; padding:10px 12px; border-radius:10px; font-weight:800; cursor:pointer; }
+        .profile-content { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
+        .chat-log { max-height:260px; overflow:auto; border:1px solid rgba(255,255,255,0.02); padding:8px; border-radius:8px; margin-bottom:8px; }
+        .ticket-list { margin-top:12px; }
+    </style>
+</head>
+<body class="bg-image">
+    <header class="top-banner">
+        <a href="Index.HTML" class="logo-wrap" aria-label="Home page">
+            <img src="Images/NextLvl.png" alt="NextLvl Logo" class="site-logo">
+        </a>
+    </header>
+
+    <main class="page-wrap">
+        <div class="profile-wrap">
+            <aside class="sidebar">
+                <div class="user">
+                    <img id="profile-logo" src="Images/NextLvl.png" alt="logo" style="height:56px; filter:drop-shadow(0 0 10px rgba(217,255,92,0.2));">
+                    <div id="profile-username" style="margin-top:8px; font-weight:800;"></div>
+                </div>
+                <div class="nav">
+                    <button class="nav-btn" data-section="orders">Orders</button>
+                    <button class="nav-btn" data-section="change-username">Change username</button>
+                    <button class="nav-btn" data-section="change-password">Change password</button>
+                    
+                    <button class="nav-btn" data-section="tickets">Log a ticket</button>
+                </div>
+                <div style="margin-top:14px; text-align:center;">
+                    <button id="logout" class="logout-btn">Log out</button>
+                </div>
+            </aside>
+
+            <section class="profile-content" id="content-area">
+                <!-- dynamic content loaded here -->
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">© 2026 Next LvL Gaming. All rights reserved.</footer>
+
+    <script>
+        function getAccounts(){
+            try { return JSON.parse(localStorage.getItem('accounts') || '[]'); } catch { return []; }
+        }
+        function getCurrentUser(){
+            try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
+        }
+        function saveCurrentUser(user){
+            const normalizedUser = {
+                ...user,
+                orders: Array.isArray(user.orders) ? user.orders : [],
+                tickets: Array.isArray(user.tickets) ? user.tickets : [],
+                cards: Array.isArray(user.cards) ? user.cards : []
+            };
+            localStorage.setItem('currentUser', JSON.stringify(normalizedUser));
+            const accounts = getAccounts();
+            const index = accounts.findIndex(a => {
+                const sameEmail = a.email && normalizedUser.email && a.email.toLowerCase() === normalizedUser.email.toLowerCase();
+                const samePhone = a.phone && normalizedUser.phone && a.phone.toLowerCase() === normalizedUser.phone.toLowerCase();
+                return sameEmail || samePhone;
+            });
+            if (index >= 0) {
+                accounts[index] = { ...normalizeAccount(accounts[index]), ...normalizedUser };
+            } else {
+                accounts.push(normalizedUser);
+            }
+            localStorage.setItem('accounts', JSON.stringify(accounts));
+            localStorage.setItem('accountCreated', 'true');
+        }
+        function normalizeAccount(account = {}){
+            return {
+                ...account,
+                orders: Array.isArray(account.orders) ? account.orders : [],
+                tickets: Array.isArray(account.tickets) ? account.tickets : [],
+                cards: Array.isArray(account.cards) ? account.cards : []
+            };
+        }
+
+        let user = normalizeAccount(getCurrentUser() || {});
+        const usernameEl = document.getElementById('profile-username');
+        usernameEl.textContent = user.username || 'Yetti Member';
+
+        const contentArea = document.getElementById('content-area');
+        const sections = {
+            'orders': renderOrders,
+            'change-username': renderChangeUsername,
+            'change-password': renderChangePassword,
+            'tickets': renderTickets
+        };
+
+        document.querySelectorAll('.sidebar .nav button').forEach(b=>{
+            b.addEventListener('click', ()=>{
+                const s = b.dataset.section;
+                if (sections[s]) sections[s]();
+            });
+        });
+
+        document.getElementById('logout').addEventListener('click', ()=>{
+            if (!confirm('Log out?')) return;
+            localStorage.setItem('accountCreated','false');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('rememberedUser');
+            window.location.href = 'Index.HTML';
+        });
+
+        function renderOrders(){
+            contentArea.innerHTML = '<h2>Orders</h2>';
+            const currentUser = getCurrentUser();
+            const userOrders = Array.isArray(currentUser && currentUser.orders) ? currentUser.orders : [];
+            const orders = [...userOrders];
+            const last = JSON.parse(localStorage.getItem('lastOrder') || 'null');
+            if(last && (!currentUser || !currentUser.email && !currentUser.phone || !userOrders.some(o => JSON.stringify(o) === JSON.stringify(last)))) {
+                orders.unshift(last);
+            }
+            if (!orders.length) {
+                contentArea.innerHTML += '<p style="color:var(--muted)">No orders yet.</p>';
+                return;
+            }
+            const ul = document.createElement('ul'); ul.style.listStyle='none'; ul.style.padding=0;
+            orders.forEach(o=>{
+                const li = document.createElement('li'); li.style.padding='12px 0';
+                li.innerHTML = `<strong>${o.id || 'Order'}</strong> — Total: R${Number(o.total||0).toFixed(2)}<br>${(o.items||[]).map(i=>`- ${i.name} (R${Number(i.price).toFixed(2)})`).join('<br>')}`;
+                ul.appendChild(li);
+            });
+            contentArea.appendChild(ul);
+        }
+
+        function renderChangeUsername(){
+            contentArea.innerHTML = `<h2>Change username</h2>
+                <p style="color:var(--muted)">Current: <strong>${user.username||''}</strong></p>
+                <label for="new-username">New username</label>
+                <input id="new-username" placeholder="New username">
+                <button id="save-username" class="submit-btn">Save</button>`;
+            document.getElementById('save-username').addEventListener('click', ()=>{
+                const v = document.getElementById('new-username').value.trim();
+                if(!v) return alert('Enter a username');
+                user.username = v;
+                saveCurrentUser(user);
+                usernameEl.textContent = v;
+                alert('Username updated');
+            });
+        }
+
+        function renderChangePassword(){
+            contentArea.innerHTML = `<h2>Change password</h2>
+                <label for="old-pass">Current password</label>
+                <input id="old-pass" type="password" placeholder="current password">
+                <label for="new-pass">New password</label>
+                <input id="new-pass" type="password" placeholder="new password">
+                <button id="save-pass" class="submit-btn">Change password</button>`;
+            document.getElementById('save-pass').addEventListener('click', ()=>{
+                const oldp = document.getElementById('old-pass').value;
+                const newp = document.getElementById('new-pass').value;
+                const stored = user.password || '';
+                if (stored && oldp !== stored) return alert('Current password does not match');
+                if (!newp) return alert('Enter a new password');
+                user.password = newp;
+                saveCurrentUser(user);
+                alert('Password changed (mock)');
+            });
+        }
+
+        function renderTickets(){
+            contentArea.innerHTML = `<h2>Log a ticket</h2>
+                <label for="ticket-subj">Subject</label>
+                <input id="ticket-subj" placeholder="Short subject">
+                <label for="ticket-body">Details</label>
+                <textarea id="ticket-body" placeholder="Describe the issue" style="width:100%; min-height:120px"></textarea>
+                <button id="submit-ticket" class="submit-btn">Submit ticket</button>
+                <div class="ticket-list" id="ticket-list"></div>`;
+            const listEl = document.getElementById('ticket-list');
+            const currentUser = getCurrentUser() || {};
+            const tickets = Array.isArray(currentUser.tickets) ? currentUser.tickets : [];
+            function refresh(){ listEl.innerHTML = tickets.map(t=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><strong>${t.subject}</strong><div style="color:var(--muted)">${t.body}</div><div style="font-size:0.85rem;color:var(--muted)">${t.when}</div></div>`).join(''); }
+            refresh();
+            document.getElementById('submit-ticket').addEventListener('click', ()=>{
+                const subject = document.getElementById('ticket-subj').value.trim();
+                const body = document.getElementById('ticket-body').value.trim();
+                if(!subject||!body) return alert('Fill subject and details');
+                const ticket = { subject, body, when: new Date().toLocaleString(), user: (getCurrentUser() || {}).username || '' };
+                currentUser.tickets = [...tickets, ticket];
+                saveCurrentUser(currentUser);
+                alert('Ticket logged (mock).');
+                document.getElementById('ticket-subj').value=''; document.getElementById('ticket-body').value='';
+                refresh();
+            });
+        }
+
+        renderOrders();
+    </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Sign up | Next LvL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="site-background">
+    <header class="top-banner">
+        <a href="Index.HTML" class="logo-wrap" aria-label="Home page">
+            <img src="Images/NextLvl.png" alt="NextLvl Logo" class="site-logo">
+        </a>
+    </header>
+
+    <main class="page-wrap">
+        <section class="section">
+            <div class="form-card">
+                <div style="text-align:center; margin-bottom:18px;">
+                    <img src="Images/NextLvl.png" alt="Logo" style="height:72px; filter: drop-shadow(0 0 14px rgba(217,255,92,0.3));">
+                    <h2 style="margin:10px 0 4px;">Become a Yetti Member</h2>
+                    <p style="color:var(--muted)">Sign up with your email or phone number</p>
+                </div>
+
+                <form id="signup-form">
+                    <label for="contact-method">Contact method</label>
+                    <select id="contact-method">
+                        <option value="email">Email</option>
+                        <option value="phone">Phone</option>
+                    </select>
+
+                    <div id="contact-field" class="full" style="margin-top:12px;">
+                        <label id="contact-label" for="contact">Email</label>
+                        <input id="contact" type="text" placeholder="you@example.com" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Continue</button>
+                </form>
+
+                <div style="margin-top:18px; border-top:1px solid var(--line); padding-top:12px;">
+                    <strong style="display:block;">Already have an account?</strong>
+                    <div style="margin-top:8px;">
+                        <input id="login-identifier" placeholder="Email or phone" style="margin-bottom:8px;">
+                        <input id="login-password" type="password" placeholder="Password" style="margin-bottom:8px; width:100%;">
+                        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; color:var(--muted);">
+                            <input id="remember-me" type="checkbox">
+                            Remember me
+                        </label>
+                        <button id="login-btn" class="submit-btn">Login</button>
+                        <div id="login-feedback" style="margin-top:8px;color:var(--muted);font-weight:700;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">© 2026 Next LvL Gaming. All rights reserved.</footer>
+
+    <script>
+        function getAccounts(){
+            try { return JSON.parse(localStorage.getItem('accounts') || '[]'); } catch { return []; }
+        }
+        function getCurrentUser(){
+            try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
+        }
+        function setCurrentUser(user){
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem('accountCreated', 'true');
+        }
+        function storeAccount(account){
+            const accounts = getAccounts();
+            const existingIndex = accounts.findIndex(a => {
+                const sameEmail = a.email && account.email && a.email.toLowerCase() === account.email.toLowerCase();
+                const samePhone = a.phone && account.phone && a.phone.toLowerCase() === account.phone.toLowerCase();
+                return sameEmail || samePhone;
+            });
+            if (existingIndex >= 0) {
+                accounts[existingIndex] = { ...accounts[existingIndex], ...account };
+            } else {
+                accounts.push(account);
+            }
+            localStorage.setItem('accounts', JSON.stringify(accounts));
+        }
+
+        const rememberedUser = JSON.parse(localStorage.getItem('rememberedUser') || 'null');
+        if (rememberedUser && (rememberedUser.email || rememberedUser.phone)) {
+            const loginIdentifier = document.getElementById('login-identifier');
+            loginIdentifier.value = rememberedUser.email || rememberedUser.phone || '';
+            const match = getAccounts().find(a =>
+                (a.email && rememberedUser.email && a.email.toLowerCase() === rememberedUser.email.toLowerCase()) ||
+                (a.phone && rememberedUser.phone && a.phone.toLowerCase() === rememberedUser.phone.toLowerCase())
+            );
+            if (match) {
+                setCurrentUser(match);
+                const after = localStorage.getItem('afterLoginGoto');
+                if (after) {
+                    localStorage.removeItem('afterLoginGoto');
+                    window.location.href = after;
+                } else {
+                    window.location.href = 'profile.html';
+                }
+            }
+        }
+
+        const method = document.getElementById('contact-method');
+        const contactLabel = document.getElementById('contact-label');
+        const contactField = document.getElementById('contact');
+
+        method.addEventListener('change', () => {
+            if (method.value === 'email') {
+                contactLabel.textContent = 'Email';
+                contactField.placeholder = 'you@example.com';
+                contactField.type = 'email';
+            } else {
+                contactLabel.textContent = 'Phone';
+                contactField.placeholder = '+27 82 000 0000';
+                contactField.type = 'tel';
+            }
+        });
+
+        document.getElementById('signup-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const contactValue = contactField.value.trim();
+            if (!contactValue) return alert('Please enter your contact.');
+            // save temporary signup info then ask for username
+            localStorage.setItem('tempSignUp', JSON.stringify({ method: method.value, contact: contactValue }));
+            // show sign up button on index header after starting signup
+            localStorage.setItem('showSignUpButton', 'true');
+            window.location.href = 'create-username.html';
+        });
+
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const id = document.getElementById('login-identifier').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            const fb = document.getElementById('login-feedback');
+            const rememberEl = document.getElementById('remember-me');
+            fb.textContent = '';
+            if (!id) return fb.textContent = 'Enter email or phone to login';
+            if (!password) return fb.textContent = 'Enter your password';
+            const accounts = getAccounts();
+            const match = accounts.find(a =>
+                (a.email && a.email.toLowerCase() === id.toLowerCase()) ||
+                (a.phone && a.phone.toLowerCase() === id.toLowerCase())
+            );
+            if (match && match.password === password) {
+                if (rememberEl && rememberEl.checked) {
+                    localStorage.setItem('rememberedUser', JSON.stringify({
+                        email: match.email || '',
+                        phone: match.phone || '',
+                        username: match.username || ''
+                    }));
+                } else {
+                    localStorage.removeItem('rememberedUser');
+                }
+                setCurrentUser(match);
+                fb.style.color = 'var(--accent)';
+                fb.textContent = 'Account found — redirecting...';
+                const after = localStorage.getItem('afterLoginGoto');
+                setTimeout(()=>{
+                    if (after) { localStorage.removeItem('afterLoginGoto'); window.location.href = after; }
+                    else window.location.href = 'profile.html';
+                }, 700);
+            } else {
+                fb.style.color = '#ff6b6b';
+                fb.textContent = 'Incorrect password or account not found.';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Cart | Next LvL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="site-bg">
+    <header class="top-banner">
+        <a href="Index.HTML" class="logo-wrap" aria-label="Home page">
+            <img src="Images/NextLvl.png" alt="NextLvl Logo" class="site-logo">
+        </a>
+        <nav class="top-nav" aria-label="Main navigation">
+            <a class="nav-btn" href="Index.HTML">Home</a>
+            <a class="nav-btn" href="Products.html">Products</a>
+            <a class="nav-btn" href="profile.html">Profile</a>
+            <a class="nav-btn cart-btn" href="Products.html" aria-label="Back to products">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M9 6l-6 6 6 6M4 12h15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="cart-badge" id="cart-count-badge">0</span>
+            </a>
+        </nav>
+    </header>
+
+    <main class="page-wrap">
+        <section class="section">
+            <div class="section-header">
+                <span class="kicker">Cart</span>
+                <h2>Your selected items</h2>
+                <p style="color:var(--muted)">Review items, remove if needed, then proceed to payment.</p>
+            </div>
+
+            <div class="form-card">
+                <div id="cart-list"></div>
+                <div style="margin-top:16px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Subtotal</span><span id="cart-sub">R0</span></div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>Discount <small id="cart-discount-percent" style="color:var(--muted)"></small></span>
+                        <span id="cart-discount">R0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Fees</span><span id="cart-fees">R0</span></div>
+                    <div style="display:flex; justify-content:space-between; font-weight:800; margin-top:12px;"><span>Total</span><span id="cart-total">R0</span></div>
+                </div>
+
+                <div style="margin-top:16px; display:flex; gap:10px;">
+                    <button id="clear-cart" class="secondary-btn">Clear cart</button>
+                    <button id="go-pay" class="submit-btn">Proceed to payment</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">© 2026 Next LvL Gaming. All rights reserved.</footer>
+
+    <script>
+        const cartList = document.getElementById('cart-list');
+        const cartSub = document.getElementById('cart-sub');
+        const cartDiscount = document.getElementById('cart-discount');
+        const cartFees = document.getElementById('cart-fees');
+        const cartTotal = document.getElementById('cart-total');
+
+        function updateCartBadge(){
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const badge = document.getElementById('cart-count-badge');
+            if (badge) {
+                badge.textContent = cart.length;
+            }
+        }
+
+        function formatR(v){ return 'R' + Number(v).toFixed(2); }
+
+        function loadCart(){
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cartList.innerHTML = '';
+            if(!cart.length) { cartList.innerHTML = '<p style="color:var(--muted)">Your cart is empty.</p>'; updateSummary([]); updateCartBadge(); return; }
+            const ul = document.createElement('ul'); ul.style.listStyle='none'; ul.style.padding=0;
+            cart.forEach((it, idx)=>{
+                const li = document.createElement('li'); li.style.display='flex'; li.style.justifyContent='space-between'; li.style.padding='10px 0';
+                li.innerHTML = `<div><strong>${it.name}</strong><div style="color:var(--muted)">R${Number(it.price).toFixed(2)}</div></div>`;
+                const btn = document.createElement('button'); btn.className='secondary-btn'; btn.textContent='Remove';
+                btn.addEventListener('click', ()=>{ removeItem(idx); });
+                li.appendChild(btn);
+                ul.appendChild(li);
+            });
+            cartList.appendChild(ul);
+            updateSummary(cart);
+            updateCartBadge();
+        }
+
+        function removeItem(index){
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart.splice(index,1);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            loadCart();
+        }
+
+        function updateSummary(cart){
+            let subtotal = cart.reduce((s,i)=>s+Number(i.price||0),0);
+            let discount = 0;
+            let discountPercent = 0;
+            // simple discount rules: 2 items -> 5%, 3 ->10%, 4+ ->15%
+            if(cart.length === 2) { discountPercent = 5; }
+            else if(cart.length === 3) { discountPercent = 10; }
+            else if(cart.length > 3) { discountPercent = 15; }
+            discount = subtotal * (discountPercent/100);
+            // fees: fixed R20 + 2.5% transaction fee
+            const fees = 20 + subtotal * 0.025;
+            const total = subtotal - discount + fees;
+            cartSub.textContent = formatR(subtotal);
+            cartDiscount.textContent = formatR(discount);
+            document.getElementById('cart-discount-percent').textContent = discountPercent ? `(${discountPercent}%)` : '';
+            cartFees.textContent = formatR(fees);
+            cartTotal.textContent = formatR(total);
+            // store summary for paygate
+            localStorage.setItem('cartSummary', JSON.stringify({ subtotal, discount, fees, total, discountPercent }));
+        }
+
+        document.getElementById('clear-cart').addEventListener('click', ()=>{ if(confirm('Clear cart?')){ localStorage.removeItem('cart'); loadCart(); } });
+        document.getElementById('go-pay').addEventListener('click', ()=>{
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            if(!cart.length) return alert('Cart is empty');
+            const accountCreated = localStorage.getItem('accountCreated') === 'true';
+            if (!accountCreated) {
+                // remember where to go after signup/login
+                localStorage.setItem('afterLoginGoto', 'paygate.html');
+                window.location.href = 'signup.html';
+                return;
+            }
+            window.location.href='paygate.html';
+        });
+
+        loadCart();
+    </script>
+</body>
+</html>

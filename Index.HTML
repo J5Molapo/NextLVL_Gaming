@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next LvL | Home</title>
+    <link rel="icon" href="Images/NextLvl.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-image">
+    <header class="top-banner">
+        <a href="Index.HTML" class="logo-wrap" aria-label="Home page">
+            <img src="Images/NextLvl.png" alt="NextLvl Logo" class="site-logo">
+        </a>
+
+        <nav class="top-nav" aria-label="Main navigation">
+            <a class="nav-btn" href="Index.HTML">Home</a>
+            <a class="nav-btn" href="About.html">About</a>
+            <a class="nav-btn" href="Products.html">Products</a>
+            <a class="nav-btn" href="contact.html">Contact</a>
+            <a class="nav-btn" href="enquiry.html">Enquiry</a>
+            <span id="dynamic-actions"></span>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="page-wrap hero-inner">
+                <img src="Images/NextLvl.png" alt="NextLvl logo" class="hero-logo">
+                <div class="welcome-box">
+                    <p>Welcome to the future of gaming!</p>
+                </div>
+                <div class="btn-row">
+                    <a class="primary-btn" href="Products.html" aria-label="Explore Products">Products</a>
+                    <a class="secondary-btn" href="About.html" aria-label="Learn More">Learn More</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section page-wrap">
+            <div class="section-header mission-header">
+                <p>Our Mission</p>
+            </div>
+            <div class="grid">
+                <article class="card">To provide limitless Gaming Experiances from every avenue of the world of FANTASY!</article>
+                <article class="card">Strong campaign,Ruthless competition and swift interactions in the world of gaming,and </article>
+                <article class="card">Creatively honing our skills to deliver the best gaming experience possible, through our interactive packages!</article>
+            </div>
+        </section>
+
+        <section class="section page-wrap">
+            <div class="feature-banner">
+                <img src="Images/Rivalry Poster.jpg" alt="Gaming desk setup">
+                <div class="feature-banner-copy">
+                    <p>Till this day we have been pushing the boundaries of what is possible in the world of gaming.
+                    Through our Rivalry with Trailblazers, we have been able to create a unique gaming experience that is unmatched in the industry.
+                     Our team of experts is constantly working to improve our products and services, ensuring that our customers have the best possible gaming experience.
+                    <b>Rivalry? NO! more like pushing each other to the limits but you know who comes out on top!</b></p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        © 2026 Next LvL Gaming. All rights reserved.
+    </footer>
+
+    <script>
+        function getAccounts(){
+            try { return JSON.parse(localStorage.getItem('accounts') || '[]'); } catch { return []; }
+        }
+        function getCurrentUser(){
+            try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
+        }
+        (function(){
+            const nav = document.getElementById('dynamic-actions');
+            const currentUser = getCurrentUser();
+            const btn = document.createElement('a');
+            btn.className = 'nav-btn';
+            btn.style.marginLeft = '8px';
+            if (currentUser && currentUser.username) {
+                btn.href = 'profile.html';
+                btn.textContent = `Yetti: ${currentUser.username}`;
+                nav.appendChild(btn);
+
+                const cartAnchor = document.createElement('a');
+                cartAnchor.className = 'nav-btn cart-btn';
+                cartAnchor.href = 'cart.html';
+                cartAnchor.style.display = 'inline-flex';
+                cartAnchor.style.alignItems = 'center';
+                cartAnchor.style.gap = '8px';
+                cartAnchor.innerHTML = `
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                        <path d="M6 6h15l-1.5 9h-12L6 6z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="10" cy="20" r="1" fill="currentColor"/>
+                        <circle cx="18" cy="20" r="1" fill="currentColor"/>
+                    </svg>
+                    <span id="cart-badge">Cart</span>
+                `;
+                nav.appendChild(cartAnchor);
+
+                const updateBadge = () => {
+                    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                    const badge = document.getElementById('cart-badge');
+                    if (badge) badge.textContent = cart.length ? `Cart (${cart.length})` : 'Cart';
+                };
+                updateBadge();
+                window.addEventListener('storage', (e) => { if (e.key === 'cart') updateBadge(); });
+            } else {
+                btn.href = 'signup.html';
+                btn.textContent = 'Sign up';
+                nav.appendChild(btn);
+            }
+        })();
+    </script>
+</body>
+</html>

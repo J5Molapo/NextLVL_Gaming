@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Create Username | Next LvL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="site-background">
+    <header class="top-banner">
+        <a href="Index.HTML" class="logo-wrap" aria-label="Home page">
+            <img src="Images/NextLvl.png" alt="NextLvl Logo" class="site-logo">
+        </a>
+    </header>
+
+    <main class="page-wrap">
+        <section class="section">
+            <div class="form-card">
+                <div style="text-align:center; margin-bottom:18px;">
+                    <img src="Images/NextLvl.png" alt="Logo" style="height:64px; filter: drop-shadow(0 0 14px rgba(217,255,92,0.3));">
+                    <h2 style="margin:8px 0;">Choose a Username</h2>
+                    <p style="color:var(--muted)">Create a unique username for your Yetti account</p>
+                </div>
+
+                <form id="username-form">
+                    <label for="username">Username</label>
+                    <input id="username" required placeholder="Your username (no spaces)">
+
+                    <label for="password" style="margin-top:12px; display:block;">Password</label>
+                    <input id="password" type="password" required placeholder="Create a password">
+
+                    <button class="submit-btn" type="submit">Create account</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">© 2026 Next LvL Gaming. All rights reserved.</footer>
+
+    <script>
+        const temp = JSON.parse(localStorage.getItem('tempSignUp') || '{}');
+        function getAccounts(){
+            try { return JSON.parse(localStorage.getItem('accounts') || '[]'); } catch { return []; }
+        }
+        function normalizeAccount(account){
+            return {
+                ...account,
+                password: account.password || '',
+                orders: Array.isArray(account.orders) ? account.orders : [],
+                tickets: Array.isArray(account.tickets) ? account.tickets : [],
+                cards: Array.isArray(account.cards) ? account.cards : []
+            };
+        }
+        function storeAccount(account){
+            const normalized = normalizeAccount(account);
+            const accounts = getAccounts();
+            const index = accounts.findIndex(a => {
+                const sameEmail = a.email && normalized.email && a.email.toLowerCase() === normalized.email.toLowerCase();
+                const samePhone = a.phone && normalized.phone && a.phone.toLowerCase() === normalized.phone.toLowerCase();
+                return sameEmail || samePhone;
+            });
+            if (index >= 0) {
+                accounts[index] = { ...normalizeAccount(accounts[index]), ...normalized };
+            } else {
+                accounts.push(normalized);
+            }
+            localStorage.setItem('accounts', JSON.stringify(accounts));
+        }
+        document.getElementById('username-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            if (!username) return alert('Please choose a username');
+            if (!password) return alert('Please create a password');
+            const user = {};
+            if (temp.method === 'email') user.email = temp.contact;
+            if (temp.method === 'phone') user.phone = temp.contact;
+            user.username = username;
+            user.password = password;
+            user.orders = [];
+            user.tickets = [];
+            user.cards = [];
+            storeAccount(user);
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem('accountCreated', 'true');
+            localStorage.setItem('showSignUpButton', 'true');
+            localStorage.removeItem('tempSignUp');
+            localStorage.removeItem('orders');
+            localStorage.removeItem('tickets');
+            localStorage.removeItem('cards');
+            localStorage.removeItem('lastOrder');
+            const after = localStorage.getItem('afterLoginGoto');
+            if (after) { localStorage.removeItem('afterLoginGoto'); window.location.href = after; }
+            else window.location.href = 'profile.html';
+        });
+    </script>
+</body>
+</html>
